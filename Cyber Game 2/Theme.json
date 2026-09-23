@@ -1,0 +1,95 @@
+{
+  "gameTitle": "SOC WATCH",
+  "currencyName": "Budget",
+  "currencySymbol": "$",
+  "layers": [
+    {
+      "id": "edr",
+      "name": "EDR",
+      "colorHex": "#4FD1C5",
+      "icon": "bolt.shield.fill",
+      "axes": {
+        "cadence": { "label": "Detection Cadence", "shortLabel": "Cadence", "unitSuffix": "/s" },
+        "neutralization": { "label": "Immediate Neutralization Chance", "shortLabel": "Neutralize", "unitSuffix": "%" },
+        "budgetPerKill": { "label": "Budget per Neutralized Alert", "shortLabel": "Budget/Kill", "unitSuffix": "" }
+      }
+    },
+    {
+      "id": "siem",
+      "name": "SIEM",
+      "colorHex": "#F2A65A",
+      "icon": "gearshape.fill",
+      "axes": {
+        "cadence": { "label": "Correlation Cadence", "shortLabel": "Cadence", "unitSuffix": "/s" },
+        "neutralization": { "label": "Immediate Neutralization Chance", "shortLabel": "Neutralize", "unitSuffix": "%" },
+        "budgetPerKill": { "label": "Budget per Neutralized Alert", "shortLabel": "Budget/Kill", "unitSuffix": "" }
+      }
+    },
+    {
+      "id": "threatIntel",
+      "name": "Threat Intel",
+      "colorHex": "#8A97A3",
+      "icon": "checkmark.shield.fill",
+      "axes": {
+        "cadence": { "label": "Analysis Cadence", "shortLabel": "Cadence", "unitSuffix": "/s" },
+        "neutralization": { "label": "Immediate Neutralization Chance", "shortLabel": "Neutralize", "unitSuffix": "%" },
+        "budgetPerKill": { "label": "Budget per Neutralized Alert", "shortLabel": "Budget/Kill", "unitSuffix": "" }
+      }
+    }
+  ],
+  "majorIncident": {
+    "label": "MAJOR INCIDENT"
+  },
+  "onboarding": {
+    "title": "Welcome to the SOC",
+    "intro": "Alerts keep coming. Your three layers try to stop them before they reach the core.",
+    "steps": [
+      {
+        "icon": "shield.lefthalf.filled",
+        "title": "Three Layers, Three Rings",
+        "body": "EDR, SIEM, and Threat Intel each guard one ring. An alert has to get past all three to breach your core."
+      },
+      {
+        "icon": "slider.horizontal.3",
+        "title": "Three Upgrades Each",
+        "body": "Cadence (fire rate), Neutralize (one-shot chance), and Budget/Kill (payout) — spread upgrades across all three, not just one."
+      },
+      {
+        "icon": "gauge.with.needle.fill",
+        "title": "Watch Absorption Capacity",
+        "body": "It only drops when an alert leaks through. Hit zero and you breach — but you keep a permanent bonus for next run."
+      }
+    ],
+    "dismissLabel": "Got it — let's go"
+  },
+  "notifications": {
+    "postMortemTitle": "Your permanent bonus is ready",
+    "postMortemBody": "SOC Watch banked a permanent bonus from your last run — come back and put it to work.",
+    "criticalTitle": "Absorption capacity critical",
+    "criticalBody": "Your SOC was close to a breach when you left. Jump back in and shore up your defenses.",
+    "idleTitle": "Your SOC has been quiet",
+    "idleBody": "Budget has been piling up while you were away. Come see how far you can push this run."
+  },
+  "breach": {
+    "title": "BREACH DETECTED",
+    "messageFormat": "Absorption capacity exhausted at wave %d.",
+    "postMortemLabel": "POST-MORTEM",
+    "postMortemBonusFormat": "+%.0f%% permanent",
+    "postMortemBestWaveFormat": "Best wave: %d"
+  },
+  "ui": {
+    "backgroundHex": "#0B0F14",
+    "cardBackgroundHex": "#131A22",
+    "borderHex": "#1C2530",
+    "borderSecondaryHex": "#2C3946",
+    "textPrimaryHex": "#E7ECEF",
+    "textSecondaryHex": "#8A97A3",
+    "alertHex": "#E5484D",
+    "waveLabel": "INCIDENT WAVE",
+    "absorptionLabel": "ABSORPTION CAPACITY",
+    "perimeterLabel": "Perimeter · EDR · SIEM · Threat Intel",
+    "welcomeBackFormat": "Welcome back · +%@ while you were away",
+    "maxLabel": "MAX",
+    "levelFormat": "%@ — Lv. %d"
+  }
+}
