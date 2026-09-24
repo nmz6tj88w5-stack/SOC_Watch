@@ -35,6 +35,28 @@
   re-testing balance changes on the simulator, uninstall the app first (`xcrun simctl uninstall <device> <bundleID>`)
   or clear UserDefaults, otherwise you're testing against a stale persisted value.
 
+## Post-rename regression check (Cyber Game 2 → SOC Watch) — verified 2026-09-23 on iPhone 17 simulator
+- After the project/target/source-folder/Info.plist rename, app launches straight to the main screen with
+  no crash (this was a returning-user save, not a fresh install, so no onboarding sheet appeared — expected
+  per the mockup, not a bug). All expected UI present and correctly rendered: dark theme, header (title +
+  budget), wave progress bar, absorption capacity bar, 3 concentric defense rings, 3 upgrade cards
+  (EDR/SIEM/Threat Intel), POST-MORTEM tile.
+- Tick loop and animation loop both confirmed alive post-rename: budget number and alert-dot positions both
+  changed across two ~2.5s-apart captures.
+- Purchase flow confirmed working post-rename: tapping an affordable Cadence button increased its displayed
+  cost immediately (12→16), i.e. GameEngine.purchaseUpgrade still fires correctly.
+- Within the same short session a full breach→post-mortem→reset cycle was also observed live (wave 8 at 75%
+  absorption → reset to wave ~1-2, all layer levels back to Lv.0, POST-MORTEM permanent bonus ticked to
+  +20%, Best wave: 10) — consistent with the already-documented breach/reset mechanic below, not a
+  rename-induced bug.
+- Only standard simulator/AX/XPC log noise in console output (XPC connection warnings, AXValidations
+  category-not-found, duplicate ObjC class warning for WebKit/WebCore accessibility bundles) — no app-level
+  errors or crashes.
+- Minor leftover from the rename (not a runtime bug, worth fixing when next touching project settings): the
+  running app's bundle identifier is still `devplaceholder.D2P9GI00.Cyber-Game-2` even though the product/
+  scheme/display name is now "SOC Watch" — the rename changed the project file, source folder, and Info.plist
+  names but did not update `PRODUCT_BUNDLE_IDENTIFIER`.
+
 ## Fire-feedback visual (sensor pulse + beam flash) — verified 2026-09-22 on iPhone 17 simulator
 - Confirmed both pieces of the newly-added fire feedback render correctly: (1) a layer's sensor dot at
   the top of its ring gets a visible brighter/larger halo ring around it, and (2) a thin radial beam
