@@ -33,20 +33,25 @@ enum NotificationService {
             let title: String
             let body: String
             let delay: TimeInterval
+            let reason: String
 
             if let breachSummary, now.timeIntervalSince(breachSummary.occurredAt) < recentBreachWindow {
                 title = theme.notifications.postMortemTitle
                 body = theme.notifications.postMortemBody
                 delay = postMortemFollowUpDelay
+                reason = "post_mortem_follow_up"
             } else if absorptionFraction < criticalAbsorptionThreshold {
                 title = theme.notifications.criticalTitle
                 body = theme.notifications.criticalBody
                 delay = criticalCapacityDelay
+                reason = "critical_capacity"
             } else {
                 title = theme.notifications.idleTitle
                 body = theme.notifications.idleBody
                 delay = idleReminderDelay
+                reason = "idle_reminder"
             }
+            AnalyticsService.reengagementScheduled(reason: reason, delaySeconds: delay)
 
             let content = UNMutableNotificationContent()
             content.title = title

@@ -8,6 +8,10 @@ struct ContentView: View {
     /// system UI, not a SwiftUI sheet, so nothing else here would
     /// otherwise notice it's blocking the screen.
     @State private var isAwaitingNotificationPermission = false
+    /// Tracks the current foreground session's start, purely for the
+    /// session_ended analytics duration — reset every time the app returns
+    /// to .active from the background.
+    @State private var sessionStartDate = Date()
 
     init() {
         let engine = GameEngine(
@@ -37,7 +41,15 @@ struct ContentView: View {
         .sensoryFeedback(.error, trigger: engine.lastBreachSummary)
         .onChange(of: engine.totalKillCount) { _, _ in FeedbackService.playKillSound() }
         .onChange(of: engine.totalUpgradeLevelCount) { _, _ in FeedbackService.playPurchaseSound() }
-        .onChange(of: engine.lastBreachSummary) { _, _ in FeedbackService.playBreachSound() }
+        .onChange(of: engine.lastBreachSummary) { _, summary in
+            FeedbackService.playBreachSound()
+            if let summary {
+                AnalyticsService.breach(waveReached: summary.waveReached, pointsEarned: summary.pointsEarned, newMultiplier: summary.newMultiplier)
+            }
+        }
+        .onChange(of: engine.state.currentWave) { _, newWave in
+            AnalyticsService.waveReached(newWave)
+        }
         .task {
             while !Task.isCancelled {
                 // Don't let waves/combat run behind the onboarding sheet
@@ -53,6 +65,7 @@ struct ContentView: View {
         .sheet(isPresented: $showOnboarding) {
             OnboardingView(theme: engine.theme) {
                 engine.completeOnboarding()
+                AnalyticsService.onboardingCompleted()
                 showOnboarding = false
                 isAwaitingNotificationPermission = true
                 Task {
@@ -65,9 +78,15 @@ struct ContentView: View {
             switch new {
             case .active where old != .active:
                 engine.applyOfflineProgress(now: Date())
+                if let gained = engine.lastOfflineGain {
+                    AnalyticsService.offlineGainApplied(gained: gained)
+                }
                 NotificationService.cancelReengagement()
+                sessionStartDate = Date()
+                AnalyticsService.sessionStarted()
             case .background:
                 engine.persist()
+                AnalyticsService.sessionEnded(durationSeconds: Date().timeIntervalSince(sessionStartDate))
                 NotificationService.scheduleReengagement(
                     theme: engine.theme,
                     breachSummary: engine.lastBreachSummary,
