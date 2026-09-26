@@ -76,7 +76,7 @@ struct GameBalance: Codable {
     static let fallback = GameBalance(
         baseAlertCount: 5.0,
         alertCountGrowthPerWave: 0.35,
-        majorIncidentVolumeMultiplier: 4.0,
+        majorIncidentVolumeMultiplier: 3.0,
         baseSpawnInterval: 1.4,
         spawnIntervalDecay: 0.985,
         minSpawnInterval: 0.18,
