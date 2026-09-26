@@ -76,3 +76,46 @@
   this is the wave-progress/breach/post-mortem-reset cycle (see balance tuning history above), not a
   bug. Reconfirms rules.md R1: always sample 3+ points over time, never trust a single before/after pair,
   because level/wave/budget numbers move on their own between captures independent of taps.
+
+## Monetization & retention infrastructure (as of 2026-09-24)
+- No monetization or analytics code exists anywhere in the project: no StoreKit, no IAP, no ad SDK, no
+  analytics/tracking calls. The app is currently 100% free with zero revenue instrumentation.
+- Offline catch-up already exists and is capped: `GameBalance.swift` (`maxOfflineSeconds: 8*3600`,
+  `offlineEfficiency: 0.5`) — applied in `GameEngine.swift:262` (`gained = passiveIncomePerSecond() * elapsed * offlineEfficiency`).
+  This cap is a natural, already-present lever for a future "extend offline catch-up" IAP or rewarded ad,
+  rather than something that needs to be built from scratch.
+- Retention primitives already shipped: one-shot `OnboardingView` (driven by `theme.onboarding`, shown via
+  `PersistenceService.hasSeenOnboarding()`), and `NotificationService` schedules exactly one re-engagement
+  local notification per backgrounding, choosing among 3 copy variants (post-mortem follow-up, critical
+  absorption, generic idle) — see NotificationService.swift:29-49. No daily-login/streak reward system,
+  no Game Center integration, no widget/Live Activity exist yet.
+- Full skin/logic separation is architectural, not incidental: GameEngine.swift's own header comment states
+  "No copy or color is ever hardcoded here — all player-facing content lives in `theme`" (Theme.json). This
+  makes cosmetic theme-pack IAP unusually cheap to build relative to typical apps, since the reskin pipeline
+  already exists for a different reason (localization/rebrand-proofing).
+- `bestWaveReached` and `totalPostMortems` are already tracked in `GameState` (GameModels.swift:45-48),
+  making a Game Center leaderboard/achievements integration mostly plumbing, no new game-state design.
+
+## Local analytics instrumentation (added 2026-09-24)
+- `AnalyticsService.swift` (new file, `os.Logger`, subsystem `com.socwatch.app`, category `analytics`) is
+  the first telemetry in the app — purely local, no network, no third-party SDK, no PII. All interpolated
+  values are marked `privacy: .public` deliberately so they're readable in Console.app / `log stream
+  --predicate 'subsystem == "com.socwatch.app"'` during dev/TestFlight sessions instead of being redacted.
+- Events wired: `session_started` / `session_ended` (duration, from `ContentView`'s `scenePhase` handler —
+  NOT from `.task`, see below), `wave_reached` (from `.onChange(of: engine.state.currentWave)`), `breach`
+  (wave/points/multiplier, from the existing `lastBreachSummary` onChange), `offline_gain_applied` (from
+  the `.active` scenePhase branch after `applyOfflineProgress`), `reengagement_scheduled` (reason +
+  delay, logged inside `NotificationService.scheduleReengagement`'s three branches), `onboarding_completed`.
+- **Gotcha found and fixed during verification:** originally logged `session_started` from both `.task`
+  (view-appear) and the `scenePhase` `.active where old != .active` branch — on a real cold launch in the
+  simulator, SwiftUI's `scenePhase` transitions through `.active` almost immediately after the view
+  appears, so *both* fired and double-counted every session start. Fixed by removing the `.task` call and
+  keeping only the `scenePhase` one; verified via `RunProject`/`GetConsoleOutput` that a fresh launch now
+  logs exactly one `session_started` (plus `offline_gain_applied`, which is pre-existing behavior that also
+  fires on cold launch, not just resume-from-background — worth remembering if `offline_gain_applied`
+  counts are used later to gauge "player returned after being away," since cold launches count too).
+- Verified live on simulator: `wave_reached` fired correctly as an in-progress run advanced waves, and
+  `offline_gain_applied`/`session_started` fired correctly on launch. `session_ended`/breach were not
+  live-verified this session (would need a real backgrounding or a full breach cycle, not just a forced
+  process stop) — the code path directly mirrors the already-verified `engine.persist()` call in the same
+  `scenePhase` branch, so risk is low, but flag this if a future session wants to close the loop.
