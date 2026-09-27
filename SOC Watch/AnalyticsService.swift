@@ -50,4 +50,12 @@ enum AnalyticsService {
     static func adLoadFailed(reason: String) {
         logger.log("event=ad_load_failed reason=\(reason, privacy: .public)")
     }
+
+    /// Logged whenever a persisted GameState fails to decode (corrupt data,
+    /// or a future schema change without a migration path) — see
+    /// PersistenceService.load(). Surfaces what was previously a silent
+    /// `try?` failure that reset progress with no signal anywhere.
+    static func saveDecodeFailed(reason: String) {
+        logger.error("event=save_decode_failed reason=\(reason, privacy: .public)")
+    }
 }

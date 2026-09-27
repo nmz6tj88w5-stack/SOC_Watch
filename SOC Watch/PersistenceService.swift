@@ -13,7 +13,17 @@ struct PersistenceService {
 
     func load() -> GameState? {
         guard let data = defaults.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(GameState.self, from: data)
+        do {
+            return try JSONDecoder().decode(GameState.self, from: data)
+        } catch {
+            // Previously a silent `try?` — a decode failure (corrupt data,
+            // or a future GameState field added without a default) would
+            // silently reset a returning player's progress to `.initial()`
+            // with zero signal anywhere. Logging it doesn't recover the
+            // save, but makes the failure visible instead of invisible.
+            AnalyticsService.saveDecodeFailed(reason: error.localizedDescription)
+            return nil
+        }
     }
 
     func save(_ state: GameState) {
