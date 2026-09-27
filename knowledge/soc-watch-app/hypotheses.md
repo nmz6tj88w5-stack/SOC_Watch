@@ -44,6 +44,10 @@ several real days of usage post-approval, checked via `log stream --predicate 's
 conclusion about whether this monetization lever is worth extending (e.g. a second rewarded-ad placement,
 or cosmetic theme-pack IAP per the already-identified but unbuilt lever in knowledge.md).
 
+## H5: Singleton/static service coupling (AdsService.shared, NotificationService, AnalyticsService, FeedbackService) will become a real testability blocker (1 observation)
+Flagged during the 2026-09-27 full code review (see knowledge.md "Full code review"): `ContentView.swift` and `DefenseHUDView.swift` call these directly with no injected protocol, so nothing about their side effects (ad show/hide, notification scheduling, analytics events, sounds) can be unit-tested or mocked today. Currently zero real-world impact since the project has no test target/suite yet. Status: single review pass, no repeated pain observed yet.
+Next step if revisited: only act on this once a test suite is actually being introduced for `ContentView`/`GameEngine` — at that point, wrap each singleton behind a small protocol (e.g. `AdsProviding`) and inject via `@Environment` or initializer, rather than refactoring pre-emptively.
+
 ## H2: Fire-feedback flash frequency scales with a layer's Cadence level (1 observation)
 On 2026-09-22, a 5-shot burst (~3-4s apart) after boosting EDR Cadence Lv.1→Lv.5 showed the EDR
 sensor-halo+beam flash in 2/5 frames, versus 0/5 EDR-specific flashes in a same-length pre-upgrade
