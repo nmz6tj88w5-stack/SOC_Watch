@@ -135,6 +135,29 @@
   be exercised yet since no real ad has served — revisit once the AdMob account is approved (see
   hypotheses.md).
 
+## Attack/defense/leak visual distinction (added 2026-09-27)
+- Before this, incoming alerts (attacks) and defense sensor dots were both plain circles, differing only
+  by color — a known anti-pattern (relies on color alone, fails for colorblind players) and per user
+  feedback, hard to tell apart at a glance even for sighted players. Fixed in `DefenseZoneView.swift`'s
+  `drawAlert`: traveling incoming alerts are now diamonds (4-point rotated square via a manual `Path`),
+  while defense sensor dots on the rings stay circles. Verified live on simulator across multiple
+  captures: diamonds render correctly at various ring positions, sensor dots stayed circular, survived a
+  full breach/post-mortem/reset cycle without shape regressions.
+- Also strengthened the "leak" visual (an alert reaching the core unneutralized — the only event that
+  actually costs `absorptionCapacity`, see `GameEngine.resolveLeaks`). It previously used the exact same
+  thin 2pt stroked-ring treatment as a per-layer neutralize burst, just centered on the core instead of
+  the ring — easy to miss among the sensor pulses/beams. Now fills a radial-gradient flash across ~85% of
+  the defense zone plus a much bigger/thicker (24-84px, 4pt) shockwave ring, reusing the same
+  `.radialGradient` technique `drawCore`'s danger glow already used elsewhere in this file.
+- **Could not visually confirm the leak flash directly** — it fades over the same 0.4s `flashDuration`
+  window as everything else in this view, and screenshot-polling round-trip (~1-1.3s per capture) is
+  strictly longer than that window, so a burst of 9 captures over ~90s of real gameplay (which did include
+  a full absorption-depletion reset, i.e. at least one leak definitely fired) caught zero leak-flash
+  frames — a sampling-rate limitation, not evidence the change doesn't work. Confidence is based on code
+  review (identical Canvas/`radialGradient` pattern already verified working in `drawCore`) rather than a
+  direct screenshot catch. If this ever matters enough to verify directly, screen-record instead of
+  polling screenshots — see hypotheses.md H4.
+
 ## Local analytics instrumentation (added 2026-09-24)
 - `AnalyticsService.swift` (new file, `os.Logger`, subsystem `com.socwatch.app`, category `analytics`) is
   the first telemetry in the app — purely local, no network, no third-party SDK, no PII. All interpolated

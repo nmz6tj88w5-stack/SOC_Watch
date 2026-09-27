@@ -1,5 +1,14 @@
 # SOC Watch — Hypotheses (need more data / confirmations)
 
+## H4: The strengthened leak-flash effect actually reads as clearly more noticeable in play (0 observations)
+On 2026-09-27, the core-leak visual in `DefenseZoneView.swift` was made much bigger/brighter (see
+knowledge.md), but this was verified only by code review — a screenshot-polling device-interaction
+session (9 captures, ~1-1.3s apart, over ~90s) never landed inside the 0.4s flash window, even though a
+leak/reset definitely happened during that session. Status: unconfirmed by direct observation.
+Next step if revisited: verify with a screen recording (continuous capture) instead of discrete
+screenshot polling, since the flash duration is shorter than this tool's screenshot round-trip time —
+or ask a real user/tester whether the hit now feels noticeable during a normal play session.
+
 ## H1: V1 balance constants may still breach too early for casual players (1 observation)
 After rebalancing (see knowledge.md), a fresh unupgraded run survived to wave 10 — exactly the
 first Major Incident (boss) wave — before its first breach, in one ~90s device-interaction session.
