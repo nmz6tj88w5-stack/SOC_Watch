@@ -35,10 +35,11 @@ final class AdsService: NSObject {
         let parameters = RequestParameters()
         parameters.isTaggedForUnderAgeOfConsent = false
 
-        ConsentInformation.shared.requestConsentInfoUpdate(with: parameters) { [weak self] error in
-            guard let self else { return }
-            guard error == nil else {
-                self.isRequestingConsent = false
+        Task {
+            do {
+                try await ConsentInformation.shared.requestConsentInfoUpdate(with: parameters)
+            } catch {
+                isRequestingConsent = false
                 return
             }
             guard
@@ -46,17 +47,15 @@ final class AdsService: NSObject {
                     .compactMap({ $0 as? UIWindowScene })
                     .first?.keyWindow?.rootViewController
             else {
-                self.isRequestingConsent = false
+                isRequestingConsent = false
                 return
             }
 
-            ConsentForm.loadAndPresentIfRequired(from: rootViewController) { [weak self] _ in
-                guard let self else { return }
-                self.isRequestingConsent = false
-                guard ConsentInformation.shared.canRequestAds, !self.hasStartedAds else { return }
-                self.hasStartedAds = true
-                self.startMobileAdsSDK()
-            }
+            try? await ConsentForm.loadAndPresentIfRequired(from: rootViewController)
+            isRequestingConsent = false
+            guard ConsentInformation.shared.canRequestAds, !hasStartedAds else { return }
+            hasStartedAds = true
+            startMobileAdsSDK()
         }
     }
 
