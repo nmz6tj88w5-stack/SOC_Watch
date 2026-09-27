@@ -90,6 +90,7 @@
     "perimeterLabel": "Perimeter · EDR · SIEM · Threat Intel",
     "welcomeBackFormat": "Welcome back · +%@ while you were away",
     "maxLabel": "MAX",
-    "levelFormat": "%@ — Lv. %d"
+    "levelFormat": "%@ — Lv. %d",
+    "doubleOfflineGainLabel": "Doubler (regarder une pub)"
   }
 }

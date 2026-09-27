@@ -84,6 +84,7 @@ struct ContentView: View {
                 NotificationService.cancelReengagement()
                 sessionStartDate = Date()
                 AnalyticsService.sessionStarted()
+                AdsService.shared.requestConsentAndStart()
             case .background:
                 engine.persist()
                 AnalyticsService.sessionEnded(durationSeconds: Date().timeIntervalSince(sessionStartDate))

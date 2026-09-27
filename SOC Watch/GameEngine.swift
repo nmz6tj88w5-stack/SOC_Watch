@@ -265,6 +265,17 @@ final class GameEngine {
         persist()
     }
 
+    /// Grants a second copy of the just-applied offline gain (e.g. after
+    /// watching a rewarded ad) and clears `lastOfflineGain`, which also
+    /// hides the "welcome back" banner/button in the HUD — reusing that
+    /// field as the single source of truth instead of adding a new flag.
+    func claimOfflineGainBoost() {
+        guard let gained = lastOfflineGain else { return }
+        state.budget += gained
+        lastOfflineGain = nil
+        persist()
+    }
+
     // MARK: Persistence
 
     func persist() {

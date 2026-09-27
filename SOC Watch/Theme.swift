@@ -68,6 +68,7 @@ struct UITheme: Codable {
     let welcomeBackFormat: String
     let maxLabel: String
     let levelFormat: String
+    let doubleOfflineGainLabel: String
 }
 
 struct ThemeConfig: Codable {
@@ -151,7 +152,7 @@ struct ThemeConfig: Codable {
                     alertHex: "#E5484D", waveLabel: "INCIDENT WAVE", absorptionLabel: "ABSORPTION CAPACITY",
                     perimeterLabel: "Perimeter · EDR · SIEM · Threat Intel",
                     welcomeBackFormat: "Welcome back · +%@ while you were away", maxLabel: "MAX",
-                    levelFormat: "%@ — Lv. %d")
+                    levelFormat: "%@ — Lv. %d", doubleOfflineGainLabel: "Doubler (regarder une pub)")
     )
 }
 

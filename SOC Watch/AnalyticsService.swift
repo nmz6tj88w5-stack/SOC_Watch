@@ -38,4 +38,16 @@ enum AnalyticsService {
     static func onboardingCompleted() {
         logger.log("event=onboarding_completed")
     }
+
+    static func adOffered() {
+        logger.log("event=ad_offered")
+    }
+
+    static func adRewardGranted() {
+        logger.log("event=ad_reward_granted")
+    }
+
+    static func adLoadFailed(reason: String) {
+        logger.log("event=ad_load_failed reason=\(reason, privacy: .public)")
+    }
 }

@@ -62,10 +62,12 @@ struct TopHUDView: View {
                 progressBar(value: engine.absorptionFraction, color: absorptionColor)
             }
 
-            if let gain = engine.lastOfflineGain {
-                Text(String(format: theme.ui.welcomeBackFormat, formattedNumber(gain)))
+            if engine.lastOfflineGain != nil {
+                Text(String(format: theme.ui.welcomeBackFormat, formattedNumber(engine.lastOfflineGain ?? 0)))
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(Color(hex: "#4FD1C5"))
+                    .transition(.opacity)
+                DoubleOfflineGainButton(engine: engine)
                     .transition(.opacity)
             }
         }
@@ -100,6 +102,38 @@ struct TopHUDView: View {
         formatter.groupingSeparator = " "
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: value)) ?? "0"
+    }
+}
+
+private struct DoubleOfflineGainButton: View {
+    let engine: GameEngine
+
+    private var theme: ThemeConfig { engine.theme }
+    private var isReady: Bool { AdsService.shared.isReady }
+
+    var body: some View {
+        Button {
+            AnalyticsService.adOffered()
+            AdsService.shared.show { earned in
+                if earned {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        engine.claimOfflineGainBoost()
+                    }
+                    AnalyticsService.adRewardGranted()
+                }
+            }
+        } label: {
+            Text(theme.ui.doubleOfflineGainLabel)
+                .font(.system(.caption2, design: .monospaced, weight: .semibold))
+                .foregroundStyle(isReady ? Color(hex: theme.ui.backgroundHex) : Color(hex: theme.ui.textSecondaryHex))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule().fill(isReady ? Color(hex: "#4FD1C5") : Color(hex: theme.ui.borderSecondaryHex))
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isReady)
     }
 }
 
