@@ -96,6 +96,45 @@
 - `bestWaveReached` and `totalPostMortems` are already tracked in `GameState` (GameModels.swift:45-48),
   making a Game Center leaderboard/achievements integration mostly plumbing, no new game-state design.
 
+## Monetization — rewarded ads on offline catch-up (shipped 2026-09-26)
+- First monetization code in the app. `AdsService.swift` (new file, `@MainActor @Observable final class`,
+  singleton `AdsService.shared`) wraps the Google Mobile Ads SDK (`GoogleMobileAds` SPM package,
+  `https://github.com/googleads/swift-package-manager-google-mobile-ads.git`) for exactly one rewarded-ad
+  slot: watching an ad calls `GameEngine.claimOfflineGainBoost()`, which re-adds `lastOfflineGain` to
+  `state.budget` and sets `lastOfflineGain = nil` — deliberately reusing that existing field as the single
+  source of truth for the "welcome back" banner AND the button's visibility, instead of adding new state.
+- **Real AdMob IDs are live** (as of 2026-09-26): App ID `ca-app-pub-3619418801985843~9996006529` in
+  `GADApplicationIdentifier` (Info.plist), rewarded ad unit `ca-app-pub-3619418801985843/6188798464` in
+  `AdsService.rewardedAdUnitID`. Not Google's public test IDs — swapped in immediately once the user
+  created the AdMob app/ad unit, so there's no "swap before submission" TODO left.
+- **Non-personalized ads only, deliberately** — `Extras().additionalParameters = ["npa": "1"]` registered
+  on every `Request()`. No ATT prompt, no IDFA use, keeps `PrivacyInfo.xcprivacy`'s `NSPrivacyTracking =
+  false` valid as-is (the SDK ships its own privacy manifest for its own required-reason API usage, so our
+  manifest didn't need any edits for this).
+- **The installed Google Mobile Ads SDK version uses the newer Swift-idiomatic API** (no `GAD` prefix,
+  e.g. `RewardedAd`, `MobileAds.shared`, `Request`, `Extras`, `FullScreenContentDelegate`, async/await
+  `RewardedAd.load(with:request:)` instead of a completion-handler load) — NOT the older
+  `GADRewardedAd`/`GADMobileAds.sharedInstance()` API shown in a lot of older tutorials/blog posts. If a
+  future session adds more ad SDK code and copies a `GAD`-prefixed snippet from memory or an old doc, it
+  will fail to compile with "has been renamed to ___" errors — check the installed package's actual API
+  first (`XcodeRefreshCodeIssuesInFile` catches this instantly).
+- `AddInfoPlist` accepted `GADApplicationIdentifier` and `SKAdNetworkItems` but reported "key not
+  recognized by Xcode" for both (soft warning, not an error — `result: true`, both keys were written
+  correctly). Expected: these are third-party/less-common Apple keys Xcode's plist schema doesn't have
+  built-in metadata for, not a sign the write failed.
+- SKAdNetworkItems list (50 IDs) was fetched live from Google's AdMob iOS quick-start doc via WebFetch
+  rather than typed from memory, since it's a Google-maintained list that changes over time.
+- **Verified live on the iPhone 17 simulator, 2026-09-26, with the real (not test) AdMob IDs**: on cold
+  launch, `offline_gain_applied` and `session_started` fired correctly, and `AdsService` attempted a real
+  ad load which failed with `ad_load_failed reason=Account not approved yet` (Google reviews new AdMob
+  accounts before serving real ads — expected for a same-day-created account, not a bug). Device
+  interaction confirmed the "Welcome back · +14 400 while you were away" banner and the new "Doubler
+  (regarder une pub)" capsule button both render correctly below it, with the button correctly shown
+  disabled/greyed-out (not the teal accent) while `AdsService.isReady == false`. No crash, no layout
+  clipping/overlap. The full "tap button → watch ad → budget doubles → banner disappears" path could not
+  be exercised yet since no real ad has served — revisit once the AdMob account is approved (see
+  hypotheses.md).
+
 ## Local analytics instrumentation (added 2026-09-24)
 - `AnalyticsService.swift` (new file, `os.Logger`, subsystem `com.socwatch.app`, category `analytics`) is
   the first telemetry in the app — purely local, no network, no third-party SDK, no PII. All interpolated

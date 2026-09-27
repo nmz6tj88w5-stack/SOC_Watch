@@ -23,6 +23,18 @@ yet. Next step: after a handful of real sessions, check via `log show`/Console w
 typically breach past wave 10; if not, try the next lever (raise `absorptionCapacityMax` or
 `baseNeutralizationChance`) one at a time, same attribution logic.
 
+## H3: Rewarded-ad reward-claim rate on offline catch-up, once the AdMob account is approved (0 observations)
+Shipped 2026-09-26 (see knowledge.md "Monetization"), but the AdMob account was created the same day and
+Google hasn't approved it yet, so no real ad has actually served — `ad_load_failed reason=Account not
+approved yet` on every attempt so far. Once approved, the open questions are: (1) what fraction of
+sessions that show the "welcome back" banner also see `ad_offered` (i.e. the button is ready/tapped)
+vs. staying disabled because no ad preloaded in time, and (2) what fraction of `ad_offered` converts to
+`ad_reward_granted` (ad actually watched to completion vs. dismissed early / failed to present). Needs
+several real days of usage post-approval, checked via `log stream --predicate 'subsystem ==
+"com.socwatch.app"'` filtering for `ad_offered`/`ad_reward_granted`/`ad_load_failed`, before drawing any
+conclusion about whether this monetization lever is worth extending (e.g. a second rewarded-ad placement,
+or cosmetic theme-pack IAP per the already-identified but unbuilt lever in knowledge.md).
+
 ## H2: Fire-feedback flash frequency scales with a layer's Cadence level (1 observation)
 On 2026-09-22, a 5-shot burst (~3-4s apart) after boosting EDR Cadence Lv.1→Lv.5 showed the EDR
 sensor-halo+beam flash in 2/5 frames, versus 0/5 EDR-specific flashes in a same-length pre-upgrade
