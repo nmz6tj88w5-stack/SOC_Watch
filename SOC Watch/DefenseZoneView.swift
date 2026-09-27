@@ -159,9 +159,22 @@ struct DefenseZoneView: View {
                 let burst = Path(ellipseIn: CGRect(x: point.x - size / 2, y: point.y - size / 2, width: size, height: size))
                 ctx.stroke(burst, with: .color(Color(hex: layerTheme.colorHex).opacity(fade)), lineWidth: 2)
             } else {
-                let size = 12 + (1 - fade) * 20
+                // A leak (alert reaching the core unneutralized) is the one
+                // event that actually costs absorption capacity — it needs
+                // to read as a hit, not a blip, so it gets a filled flash
+                // across the whole zone plus a bold shockwave ring, not
+                // just a thin outline like the per-layer neutralize burst.
+                let alertColor = Color(hex: engine.theme.ui.alertHex)
+                let flashRadius = maxRadius * 0.85 * CGFloat(fade)
+                let flashPath = Path(ellipseIn: CGRect(x: center.x - flashRadius, y: center.y - flashRadius, width: flashRadius * 2, height: flashRadius * 2))
+                ctx.fill(flashPath, with: .radialGradient(
+                    Gradient(colors: [alertColor.opacity(fade * 0.5), .clear]),
+                    center: center, startRadius: 0, endRadius: flashRadius
+                ))
+
+                let size = 24 + (1 - fade) * 60
                 let burst = Path(ellipseIn: CGRect(x: center.x - size / 2, y: center.y - size / 2, width: size, height: size))
-                ctx.stroke(burst, with: .color(Color(hex: engine.theme.ui.alertHex).opacity(fade)), lineWidth: 2)
+                ctx.stroke(burst, with: .color(alertColor.opacity(fade)), lineWidth: 4)
             }
             return
         }
@@ -171,7 +184,15 @@ struct DefenseZoneView: View {
         let point = CGPoint(x: center.x + dx * radius, y: center.y + dy * radius)
         let pulse = (sin(now.timeIntervalSinceReferenceDate * 5 + alert.ringAngleDegrees) + 1) / 2
         let dotRadius: CGFloat = 5 + pulse * 1.5
-        let alertPath = Path(ellipseIn: CGRect(x: point.x - dotRadius, y: point.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
+        // Diamond, not a circle — sensors (defense) are round dots on the
+        // rings, so incoming alerts (attacks) need a different silhouette
+        // to read as distinct at a glance, not just a different color.
+        var alertPath = Path()
+        alertPath.move(to: CGPoint(x: point.x, y: point.y - dotRadius))
+        alertPath.addLine(to: CGPoint(x: point.x + dotRadius, y: point.y))
+        alertPath.addLine(to: CGPoint(x: point.x, y: point.y + dotRadius))
+        alertPath.addLine(to: CGPoint(x: point.x - dotRadius, y: point.y))
+        alertPath.closeSubpath()
         ctx.fill(alertPath, with: .color(Color(hex: engine.theme.ui.alertHex).opacity(0.55 + pulse * 0.45)))
     }
 }
