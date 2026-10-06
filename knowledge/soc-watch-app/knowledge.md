@@ -171,6 +171,65 @@
 - **`GameEngine.majorIncidentEveryN` is a non-private `var` defaulting to 10, never mutated anywhere in the codebase** (confirmed via grep) — dead mutability surface on an otherwise well-encapsulated class (most other engine state is `private(set)`).
 - **Client-side-only economy is currently zero-risk but is a future cheating vector**: `Balance.json`/`Theme.json` ship as plain readable JSON in the bundle, trivially editable via IPA repackaging. Irrelevant today (single-player, local-only, no leaderboard/IAP wired to these values yet), but becomes a real integrity concern the moment a Game Center leaderboard or real-money IAP is wired to `budget`/`bestWaveReached` (both already identified as unbuilt future levers, see "Monetization & retention infrastructure" above).
 
+## Single-layer late-game trivialization bug found and fixed (2026-09-30)
+- **Root cause found via user report**: a real player on a physical device reported that at EDR
+  level 120 with SIEM and Threat Intel still at level 0, wave 50+ had literally zero leaks — the
+  game was "solved" by maxing one layer alone, making the other two layers pointless.
+- **Mechanism**: `GameEngine.resolveLayerFire` assigns each of the 3 layers an exclusive,
+  non-overlapping third of an alert's travel-progress range (`lower = index/3`, `upper =
+  (index+1)/3`, `GameEngine.swift:103-104`) — this part is intentional sequential defense-in-depth.
+  The bug was that `indexOfMostProgressedAlert` (pre-fix) let a layer re-target the *same* alert on
+  every fire tick as long as it stayed unresolved within that layer's band. Raising Cadence shrinks
+  `fireInterval` toward `minFireInterval` (0.12s), so a maxed layer gets many independent rolls
+  against one alert before it can progress out of the band. Even with `maxNeutralizationChance`
+  capped at 0.75 per roll, cumulative probability across N independent rolls approaches 1
+  (`1 - (1-p)^N`), so the per-shot cap provided no real protection once Cadence was high enough —
+  any single layer could defeat the intended 3-layer design alone.
+  This is the flip side of hypotheses.md's H1 (too punishing early) — same system, opposite
+  extreme (too easy/exploitable late-game).
+- **Fix (user chose "one shot per alert per layer" over 3 other options — numeric-only retune,
+  per-layer level cap, or full band-removal redesign)**: added `IncomingAlert.attemptedByLayers:
+  Set<LayerID>` (`GameModels.swift`). `resolveLayerFire` now records a miss into that set
+  (`GameEngine.swift:117`) and `indexOfMostProgressedAlert` excludes alerts the firing layer has
+  already attempted (`GameEngine.swift:126`). Net effect: each layer's actual stop-rate on any given
+  alert is now exactly its `neutralizationChance` (≤75%), never higher — a maxed single layer now
+  lets ~25% of its band's alerts through to the next layer's band, so leaks still occur and all 3
+  layers stay relevant regardless of how unevenly a player distributes upgrades. Cadence's role
+  shifted from "re-roll the same target" to "handle more distinct simultaneous alerts within the
+  band" — this matters when wave volume is high (many alerts in flight at once), not when only one
+  layer is maxed against a trickle of alerts.
+  Verified: `BuildProject` succeeds, `XcodeRefreshCodeIssuesInFile` clean on both changed files
+  (`GameModels.swift`, `GameEngine.swift`). Not yet re-verified on a physical device at EDR lv120 —
+  see hypotheses.md.
+
+## Per-wave alert-count growth switched from linear to exponential (2026-10-01)
+- **User-reported gap**: outside Major Incident waves (every 10th), wave-to-wave difficulty felt
+  flat — e.g. wave 21 vs 22 felt identical. Root cause: `GameEngine.alertCount(for:)` used
+  `baseAlertCount + wave * alertCountGrowthPerWave` (linear, additive, `0.35`/wave) then rounded to
+  an `Int` — at wave 21-24 that rounds to 12,13,13,13, i.e. flat for 2 of every 3 wave transitions.
+  `spawnInterval`/`travelDuration` also decay exponentially but so slowly (0.985/0.995 per wave)
+  that their per-wave delta is imperceptible too. Net effect: the only difficulty signal a player
+  could actually feel was the periodic ×3 Major Incident spike, not a sense of continuous ramp.
+- **Fix (user chose "exponential, matches the rest of the game's cost curves" over linear-rate-bump,
+  speed-scaling, or both-combined)**: renamed `GameBalance.alertCountGrowthPerWave` (Double, additive
+  amount) to `alertCountGrowthFactor` (Double, multiplicative factor, must be > 1.0) and changed
+  `alertCount(for:)` to `baseAlertCount * pow(alertCountGrowthFactor, wave)` — same shape as the
+  upgrade cost curves (`cadenceCostGrowth`, etc.) elsewhere in this struct. Value chosen: `1.05`
+  (5%/wave compounding). Deliberately picked so early-game (waves 1-9) alert counts are nearly
+  identical to the old linear formula (e.g. wave 9: 8 either way) — avoids reopening H1's
+  "too punishing early" concern — while late-game grows much faster (wave 50 non-major: 22 → 57;
+  wave 100: ~27 → ~660). This also means alert volume now grows *unbounded* while a player's
+  defensive throughput is capped (`maxNeutralizationChance` 0.75, `minFireInterval` 0.12s floor),
+  so every run eventually becomes unwinnable at a high enough wave and must breach — intentional,
+  feeds the existing prestige/post-mortem loop rather than letting a sufficiently-upgraded build
+  stall forever (same underlying goal as the single-layer-exploit fix above).
+  **If the renamed field name trips up a future edit**: `alertCountGrowthFactor` in `Balance.json`
+  must be a value > 1.0 (e.g. 1.05); plugging in the old linear-style value (0.35) would make alert
+  counts *shrink* toward zero as waves progress (`pow(0.35, wave) → 0`), not grow.
+  Verified: `BuildProject` succeeds, `XcodeRefreshCodeIssuesInFile` clean on `GameBalance.swift`,
+  `GameEngine.swift`, grep confirmed no leftover references to the old field name. Not yet
+  replayed live on device across a long multi-wave run — see hypotheses.md H7.
+
 ## Local analytics instrumentation (added 2026-09-24)
 - `AnalyticsService.swift` (new file, `os.Logger`, subsystem `com.socwatch.app`, category `analytics`) is
   the first telemetry in the app — purely local, no network, no third-party SDK, no PII. All interpolated

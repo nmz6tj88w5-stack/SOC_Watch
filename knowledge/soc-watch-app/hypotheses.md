@@ -1,5 +1,31 @@
 # SOC Watch — Hypotheses (need more data / confirmations)
 
+## H7: 1.05 exponential alertCountGrowthFactor feels like a continuous ramp without reopening H1 (0 observations)
+Changed 2026-10-01 (see knowledge.md "Per-wave alert-count growth switched from linear to
+exponential") in response to a user report that wave 21 vs 22 felt identical. Chosen specifically so
+early waves (1-9) are nearly unchanged from the old linear formula, to avoid reopening H1 ("breaches
+too early for casual players"). Not yet confirmed by actual play: open questions are (1) does the
+player now perceive wave-to-wave difficulty as continuously increasing outside Major Incident waves,
+and (2) does the much steeper late-game volume (e.g. ~57 alerts/wave at wave 50 vs the old ~22) push
+breach timing earlier than desired, especially combined with H6's single-layer-exploit fix (both
+changes landed the same day and have never been played together).
+Status: zero real-play observations post-change.
+Next step if revisited: play several runs spanning waves 20-60+, compare felt difficulty ramp and
+wave-at-breach against pre-2026-10-01 baselines; if breaches now happen much earlier than the ~wave
+10 baseline in knowledge.md's "Balance tuning history", consider softening `alertCountGrowthFactor`
+toward 1.03-1.04 rather than reverting to linear.
+
+## H6: The "one shot per alert per layer" fix actually stops single-layer trivialization in real play (0 observations)
+Fixed 2026-09-30 (see knowledge.md "Single-layer late-game trivialization bug") in response to a real
+user report of EDR lv120 / SIEM lv0 / Threat Intel lv0 passing wave 50 with zero leaks. The fix is
+verified by build success + static reasoning about the probability math (per-layer stop rate is now
+capped at exactly `neutralizationChance`, ≤75%, instead of approaching 100% via repeated rolls), but
+NOT yet re-verified by actually replaying the same lopsided-upgrade scenario. Status: unconfirmed by
+direct observation.
+Next step if revisited: have the user (or a device-interaction session) replay a heavily EDR-skewed
+run past wave 50 and confirm leaks now occur at roughly the expected ~25%-of-band rate, and that
+SIEM/Threat Intel visibly still land hits/neutralizations in that run.
+
 ## H4: The strengthened leak-flash effect actually reads as clearly more noticeable in play (0 observations)
 On 2026-09-27, the core-leak visual in `DefenseZoneView.swift` was made much bigger/brighter (see
 knowledge.md), but this was verified only by code review — a screenshot-polling device-interaction
