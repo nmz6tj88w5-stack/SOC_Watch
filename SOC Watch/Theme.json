@@ -91,6 +91,6 @@
     "welcomeBackFormat": "Welcome back · +%@ while you were away",
     "maxLabel": "MAX",
     "levelFormat": "%@ — Lv. %d",
-    "doubleOfflineGainLabel": "Doubler (regarder une pub)"
+    "doubleOfflineGainLabel": "Double it (watch an ad)"
   }
 }

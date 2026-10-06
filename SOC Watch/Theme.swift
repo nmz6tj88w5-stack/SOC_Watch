@@ -152,7 +152,7 @@ struct ThemeConfig: Codable {
                     alertHex: "#E5484D", waveLabel: "INCIDENT WAVE", absorptionLabel: "ABSORPTION CAPACITY",
                     perimeterLabel: "Perimeter · EDR · SIEM · Threat Intel",
                     welcomeBackFormat: "Welcome back · +%@ while you were away", maxLabel: "MAX",
-                    levelFormat: "%@ — Lv. %d", doubleOfflineGainLabel: "Doubler (regarder une pub)")
+                    levelFormat: "%@ — Lv. %d", doubleOfflineGainLabel: "Double it (watch an ad)")
     )
 }
 
