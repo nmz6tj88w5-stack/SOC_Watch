@@ -102,7 +102,7 @@ final class GameEngine {
 
             let lower = Double(index) / Double(layers.count)
             let upper = Double(index + 1) / Double(layers.count)
-            guard let targetIndex = indexOfMostProgressedAlert(now: now, lower: lower, upper: upper) else { continue }
+            guard let targetIndex = indexOfMostProgressedAlert(now: now, lower: lower, upper: upper, excluding: layerID) else { continue }
 
             let hit = Double.random(in: 0..<1) < neutralizationChance(for: layerID)
             recentFireEvents.append(FireEvent(
@@ -113,15 +113,17 @@ final class GameEngine {
             ))
             if hit {
                 neutralize(alertIndex: targetIndex, by: layerID, now: now)
+            } else {
+                incomingAlerts[targetIndex].attemptedByLayers.insert(layerID)
             }
         }
     }
 
-    private func indexOfMostProgressedAlert(now: Date, lower: Double, upper: Double) -> Int? {
+    private func indexOfMostProgressedAlert(now: Date, lower: Double, upper: Double, excluding layerID: LayerID) -> Int? {
         var bestIndex: Int?
         var bestProgress = -1.0
         for (i, alert) in incomingAlerts.enumerated() {
-            guard !alert.isResolved else { continue }
+            guard !alert.isResolved, !alert.attemptedByLayers.contains(layerID) else { continue }
             let p = alert.progress(at: now)
             guard p >= lower, p < upper else { continue }
             if p > bestProgress {
@@ -302,8 +304,10 @@ final class GameEngine {
         majorIncidentEveryN > 0 && wave % majorIncidentEveryN == 0
     }
 
+    /// Exponential (compounding) growth per wave, not linear — see
+    /// `GameBalance.alertCountGrowthFactor`'s doc comment for why.
     private func alertCount(for wave: Int) -> Int {
-        let base = balance.baseAlertCount + Double(wave) * balance.alertCountGrowthPerWave
+        let base = balance.baseAlertCount * pow(balance.alertCountGrowthFactor, Double(wave))
         let multiplier = isMajor(wave) ? balance.majorIncidentVolumeMultiplier : 1.0
         return max(1, Int((base * multiplier).rounded()))
     }

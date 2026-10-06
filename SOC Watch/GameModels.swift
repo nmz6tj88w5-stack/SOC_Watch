@@ -81,6 +81,14 @@ struct IncomingAlert: Identifiable, Equatable {
     var isResolved: Bool = false
     var resolvedAt: Date? = nil
     var neutralizedByLayer: LayerID? = nil
+    /// Layers that have already taken (and missed) their shot at this
+    /// alert. Each layer gets exactly one attempt per alert while it
+    /// transits that layer's progress band — without this, a layer with
+    /// high Cadence could re-roll the same target every fire tick until it
+    /// landed a hit, which defeats `neutralizationChance`'s cap by sheer
+    /// attempt volume (cumulative probability approaches 100% regardless
+    /// of the per-shot cap).
+    var attemptedByLayers: Set<LayerID> = []
 
     var isLeak: Bool { isResolved && neutralizedByLayer == nil }
 
