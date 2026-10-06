@@ -8,7 +8,14 @@ import Foundation
 struct GameBalance: Codable {
     // Spawn / wave difficulty
     let baseAlertCount: Double
-    let alertCountGrowthPerWave: Double
+    /// Multiplicative per-wave growth factor (e.g. 1.05 = +5% alerts per
+    /// wave, compounding) — NOT an additive amount. Deliberately
+    /// exponential rather than linear so difficulty keeps scaling
+    /// proportionally in late-game waves instead of flattening out, and to
+    /// match every other growth curve in this struct (cost curves, etc.),
+    /// which are all `pow(factor, level)`. A value below 1.0 would shrink
+    /// alert count toward zero as waves progress — always keep this > 1.0.
+    let alertCountGrowthFactor: Double
     let majorIncidentVolumeMultiplier: Double
     let baseSpawnInterval: TimeInterval
     let spawnIntervalDecay: Double
@@ -75,7 +82,7 @@ struct GameBalance: Codable {
     // load, the game keeps running on these values instead of crashing.
     static let fallback = GameBalance(
         baseAlertCount: 5.0,
-        alertCountGrowthPerWave: 0.35,
+        alertCountGrowthFactor: 1.05,
         majorIncidentVolumeMultiplier: 3.0,
         baseSpawnInterval: 1.4,
         spawnIntervalDecay: 0.985,

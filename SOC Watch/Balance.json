@@ -1,6 +1,6 @@
 {
   "baseAlertCount": 5.0,
-  "alertCountGrowthPerWave": 0.35,
+  "alertCountGrowthFactor": 1.05,
   "majorIncidentVolumeMultiplier": 3.0,
   "baseSpawnInterval": 1.4,
   "spawnIntervalDecay": 0.985,
